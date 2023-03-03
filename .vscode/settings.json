@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "mutex.h": "c",
+        "module.h": "c",
+        "kernel.h": "c",
+        "kdev_t.h": "c",
+        "init.h": "c",
+        "fs.h": "c",
+        "device.h": "c",
+        "cdev.h": "c",
+        "uaccess.h": "c"
+    }
+}
