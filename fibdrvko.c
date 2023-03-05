@@ -6,6 +6,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
+#include "bn.h"
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
@@ -17,29 +18,33 @@ MODULE_VERSION("0.1");
 /* MAX_LENGTH is set to 92 because
  * ssize_t can't fit the number > 92
  */
-#define MAX_LENGTH 500
+#define MAX_LENGTH 10000
 static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
 static struct class *fib_class;
 static DEFINE_MUTEX(fib_mutex);
 
-static __uint128_t fib_sequence(uint64_t k)
-{
-    __uint128_t a = 0, b = 1, t1, t2;
-    int len = 64 - __builtin_clzl(k);
+static ktime_t kt;
 
-    while (len > 0) {
-        t1 = a * (2 * b - a);
-        t2 = b * b + a * a;
-        a = t1;
-        b = t2;
-        if (k >> (--len) & 1) {
-            t1 = a + b;
-            a = b;
-            b = t1;
-        }
+bn *fib_sequence(uint64_t n)
+{
+    bn *dest = bn_alloc(1);
+    if (n < 2) {  // Fib(0) = 0, Fib(1) = 1
+        dest->number[0] = n;
+        return dest;
     }
-    return a;
+
+    bn *a = bn_alloc(1);
+    bn *b = bn_alloc(1);
+    dest->number[0] = 1;
+    for (unsigned int i = 1; i < n; i++) {
+        bn_swap(b, dest);
+        bn_add(a, b, dest);
+        bn_swap(a, b);
+    }
+    bn_free(a);
+    bn_free(b);
+    return dest;
 }
 
 static int fib_open(struct inode *inode, struct file *file)
@@ -63,10 +68,14 @@ static ssize_t fib_read(struct file *file,
                         size_t size,
                         loff_t *offset)
 {
-    __uint128_t f = fib_sequence(*offset);
-    if (copy_to_user(buf, &f, sizeof(__uint128_t)))
+    kt = ktime_get();
+    bn *res = fib_sequence(*offset);
+    if (copy_to_user(buf, res->number, res->size * sizeof(int)))
         return -EFAULT;
-    return (ssize_t) sizeof(__uint128_t);
+    kt = ktime_sub(ktime_get(), kt);
+    int sz = res->size;
+    bn_free(res);
+    return (ssize_t) sz;
 }
 
 /* write operation is skipped */
@@ -75,7 +84,7 @@ static ssize_t fib_write(struct file *file,
                          size_t size,
                          loff_t *offset)
 {
-    return 1;
+    return ktime_to_ns(kt);
 }
 
 static loff_t fib_device_lseek(struct file *file, loff_t offset, int orig)
