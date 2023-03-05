@@ -43,6 +43,7 @@ int main()
     // long long sz;
     int buf[1000];
     int offset = 1000; /* TODO: try test something bigger than the limit */
+    int times = 200;
     FILE *log = fopen("extime.txt", "w");
     int fd = open(FIB_DEV, O_RDWR);
     if (fd < 0) {
@@ -56,11 +57,17 @@ int main()
     }*/
 
     for (int i = 0; i <= offset; i++) {
-        lseek(fd, i, SEEK_SET);
-        long long sz = read(fd, buf, 1);
-        ssize_t ns = write(fd, NULL, 0);
+        long long sz;
+        fprintf(log, "n: %d ns: [", i);
+        for (int k = 0; k < times; k++) {
+            lseek(fd, i, SEEK_SET);
+            sz = read(fd, buf, 1);
+            ssize_t ns = write(fd, NULL, 0);
+            fprintf(log, "%ld,", ns);
+        }
+        fprintf(log, "]\n");
+
         char *num = bn_to_string(buf, sz);
-        fprintf(log, "n: %d ; ns: %ld\n", i, ns);
         printf("Reading from " FIB_DEV
                " at offset %d, returned the sequence "
                "%s.\n",
@@ -75,8 +82,8 @@ int main()
                " at offset %d, returned the sequence "
                "%lld.\n",
                i, sz);
-    }
+    }*/
     fclose(log);
-    close(fd);*/
+    close(fd);
     return 0;
 }

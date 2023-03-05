@@ -26,7 +26,7 @@ static DEFINE_MUTEX(fib_mutex);
 
 static ktime_t kt;
 
-bn *fib_sequence(uint64_t n)
+static bn *fib_sequence(uint64_t n)
 {
     bn *dest = bn_alloc(1);
     if (n < 2) {  // Fib(0) = 0, Fib(1) = 1
