@@ -28,23 +28,38 @@ static ktime_t kt;
 
 static bn *fib_sequence(uint64_t n)
 {
-    bn *dest = bn_alloc(1);
-    if (n < 2) {  // Fib(0) = 0, Fib(1) = 1
-        dest->number[0] = n;
-        return dest;
-    }
-
     bn *a = bn_alloc(1);
-    bn *b = bn_alloc(1);
-    dest->number[0] = 1;
-    for (unsigned int i = 1; i < n; i++) {
-        bn_swap(b, dest);
-        bn_add(a, b, dest);
-        bn_swap(a, b);
+    if (n < 2) {  // Fib(0) = 0, Fib(1) = 1
+        a->number[0] = n;
+        return a;
     }
-    bn_free(a);
+    int len = 64 - __builtin_clzl(n);
+    bn *b = bn_alloc(1);
+    b->number[0] = 1;
+    bn *t1 = bn_alloc(1);
+
+    while (len > 0) {
+        // t1 = a * (2 * b - a)
+        bn_add(b, b, t1);
+        bn_sub(t1, a, t1);
+        bn_mult(a, t1, t1);
+
+        // t2 = b * b + a * a
+        // b = t2
+        bn_mult(b, b, b);
+        bn_mult(a, a, a);
+        bn_add(a, b, b);
+        // a = t1
+        bn_swap(a, t1);
+        if (n >> (--len) & 1) {
+            bn_add(a, b, t1);
+            bn_swap(a, b);
+            bn_swap(b, t1);
+        }
+    }
     bn_free(b);
-    return dest;
+    bn_free(t1);
+    return a;
 }
 
 static int fib_open(struct inode *inode, struct file *file)

@@ -1,9 +1,17 @@
 #include "bn.h"
 #include <linux/slab.h>
 
-#define BN_INIT_BYTES 8
 #define DIV_ROUNDUP(x, len) (((x) + (len) -1) / (len))
 #define MAX(a, b) ((a) > (b)) ? (a) : (b)
+#ifndef SWAP
+#define SWAP(x, y)           \
+    do {                     \
+        typeof(x) __tmp = x; \
+        x = y;               \
+        y = __tmp;           \
+    } while (0)
+#endif
+
 
 bn *bn_alloc(size_t size)
 {
@@ -21,6 +29,8 @@ static void bn_resize(bn *num, int n)
     if (n == num->size)
         return;
     num->number = krealloc(num->number, sizeof(int) * n, GFP_KERNEL);
+    if (n > num->size)
+        memset(num->number + num->size, 0, sizeof(int) * (n - num->size));
     num->size = n;
 }
 
@@ -108,7 +118,9 @@ static int bn_cmp(const bn *a, const bn *b)
     }
 }
 
-
+/* c = a + b
+ * Note: work for c == a or c == b
+ */
 void bn_add(bn *a, bn *b, bn *c)
 {
     if (a->sign == b->sign) {  // both positive or negative
@@ -116,7 +128,7 @@ void bn_add(bn *a, bn *b, bn *c)
         c->sign = a->sign;
     } else {          // different sign
         if (a->sign)  // let a > 0, b < 0
-            bn_swap(a, b);
+            SWAP(a, b);
         int cmp = bn_cmp(a, b);
         if (cmp > 0) {
             /* |a| > |b| and b < 0, hence c = a - |b| */
@@ -215,6 +227,15 @@ void bn_swap(bn *a, bn *b)
     bn tmp = *a;
     *a = *b;
     *b = tmp;
+}
+
+
+/* copy b to a */
+void bn_cpy(bn *dest, const bn *src)
+{
+    bn_resize(dest, src->size);
+    memcpy(dest->number, src->number, sizeof(int) * src->size);
+    dest->sign = src->sign;
 }
 
 void bn_free(bn *p)

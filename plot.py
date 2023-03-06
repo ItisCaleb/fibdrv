@@ -20,6 +20,8 @@ def ext(filename,name):
     n = [i for i in range(0,len(times))]
     plt.plot(n,times,label=name)
 
+#ext('fast1.txt','fast doubling')
+#ext('naive.txt','naive')
 ext('kernel_ext.txt','kernel')
 ext('user_ext.txt','user')
 ext('transfer_ext.txt','kernel to user')
