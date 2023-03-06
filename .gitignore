@@ -31,5 +31,5 @@ client
 out
 
 .vscode/
-*_ext.txt
+*.txt
 .tmp*

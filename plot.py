@@ -13,7 +13,7 @@ def ext(filename,name):
         arr = np.array(eval(arr))
     
         z = np.abs((arr-arr.mean())/ arr.std())
-        processed = arr[z < 1]
+        processed = arr[z < 2]
 
         avg = np.average(processed)
         times.append(avg)

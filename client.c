@@ -7,8 +7,8 @@
 #include <unistd.h>
 
 #define FIB_DEV "/dev/fibonacci"
-#define TESTS 500
-#define FIB_N 500
+#define TESTS 200
+#define FIB_N 1000
 
 static char *bn_to_string(const int *num, ssize_t size)
 {

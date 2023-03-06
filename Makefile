@@ -43,8 +43,12 @@ check: all
 	@scripts/verify.py
 
 test: all
+	sudo sh -c "echo 0 > /proc/sys/kernel/randomize_va_space"
+	sudo sh -c "echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo"
 	$(MAKE) unload
 	$(MAKE) load
-	sudo taskset 0x1 ./client
+	sudo taskset 0x2 ./client
 	$(MAKE) unload
+	sudo sh -c "echo 1 > /proc/sys/kernel/randomize_va_space"
+	sudo sh -c "echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo"
 	python3 plot.py
