@@ -45,5 +45,6 @@ check: all
 test: all
 	$(MAKE) unload
 	$(MAKE) load
-	sudo ./client
+	sudo taskset 0x1 ./client
 	$(MAKE) unload
+	python3 plot.py

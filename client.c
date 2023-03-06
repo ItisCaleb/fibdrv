@@ -3,9 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #define FIB_DEV "/dev/fibonacci"
+#define TESTS 500
+#define FIB_N 500
 
 static char *bn_to_string(const int *num, ssize_t size)
 {
@@ -37,14 +40,24 @@ static char *bn_to_string(const int *num, ssize_t size)
     return s;
 }
 
+static inline void write_log(FILE *log, int n, u_int64_t ns[])
+{
+    fprintf(log, "n: %d ns: [", n);
+    for (int i = 0; i < TESTS; i++) {
+        fprintf(log, "%ld,", ns[i]);
+    }
+    fprintf(log, "]\n");
+}
+
+
 
 int main()
 {
     // long long sz;
     int buf[1000];
-    int offset = 1000; /* TODO: try test something bigger than the limit */
-    int times = 200;
-    FILE *log = fopen("extime.txt", "w");
+    FILE *kernel_ext = fopen("kernel_ext.txt", "w");
+    FILE *user_ext = fopen("user_ext.txt", "w");
+    FILE *transfer = fopen("transfer_ext.txt", "w");
     int fd = open(FIB_DEV, O_RDWR);
     if (fd < 0) {
         perror("Failed to open character device");
@@ -56,16 +69,30 @@ int main()
         printf("Writing to " FIB_DEV ", returned the sequence %lld\n", sz);
     }*/
 
-    for (int i = 0; i <= offset; i++) {
+    for (int i = 0; i <= FIB_N; i++) {
+        u_int64_t kernel[TESTS], user[TESTS], trans[TESTS];
         long long sz;
-        fprintf(log, "n: %d ns: [", i);
-        for (int k = 0; k < times; k++) {
+        struct timespec start, end;
+        for (int k = 0; k < TESTS; k++) {
             lseek(fd, i, SEEK_SET);
+
+            // get userspace elasped time
+            clock_gettime(CLOCK_REALTIME, &start);
             sz = read(fd, buf, 1);
-            ssize_t ns = write(fd, NULL, 0);
-            fprintf(log, "%ld,", ns);
+            clock_gettime(CLOCK_REALTIME, &end);
+
+            // get kernelspace elasped time
+            ssize_t kernel_ns = write(fd, NULL, 0);
+
+            kernel[k] = kernel_ns;
+            user[k] = end.tv_nsec - start.tv_nsec;
+            // kernel to user time
+            trans[k] = user[k] - kernel[k];
         }
-        fprintf(log, "]\n");
+        write_log(kernel_ext, i, kernel);
+        write_log(user_ext, i, user);
+        write_log(transfer, i, trans);
+
 
         char *num = bn_to_string(buf, sz);
         printf("Reading from " FIB_DEV
@@ -83,7 +110,10 @@ int main()
                "%lld.\n",
                i, sz);
     }*/
-    fclose(log);
+    fclose(kernel_ext);
+    fclose(user_ext);
+    fclose(transfer);
+
     close(fd);
     return 0;
 }

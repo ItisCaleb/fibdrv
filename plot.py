@@ -5,21 +5,25 @@ plt.xlabel('n')
 plt.ylabel('nanoseconds (ns)')
 plt.title('Execution time')
 
-times = []
-
-for line in open('extime.txt','r').readlines():
-    start = line.find('ns:')
-    arr = line[start+3:]
-    arr = np.array(eval(arr))
+def ext(filename,name):
+    times = []
+    for line in open(filename,'r').readlines():
+        start = line.find('ns:')
+        arr = line[start+3:]
+        arr = np.array(eval(arr))
     
-    z = np.abs((arr-arr.mean())/ arr.std())
-    processed = arr[z < 1]
+        z = np.abs((arr-arr.mean())/ arr.std())
+        processed = arr[z < 1]
 
-    avg = np.average(processed)
-    times.append(avg)
+        avg = np.average(processed)
+        times.append(avg)
+    n = [i for i in range(0,len(times))]
+    plt.plot(n,times,label=name)
 
-n = [i for i in range(0,len(times))]
+ext('kernel_ext.txt','kernel')
+ext('user_ext.txt','user')
+ext('transfer_ext.txt','kernel to user')
 
-plt.plot(n,times)
+plt.legend()
 plt.show()
 
