@@ -2,7 +2,7 @@ CONFIG_MODULE_SIG = n
 TARGET_MODULE := fibdrv
 
 obj-m := $(TARGET_MODULE).o
-fibdrv-objs := bn.o fibdrvko.o
+fibdrv-objs := bn_kernel.o bn.o fibdrvko.o
 
 ccflags-y := -std=gnu99 -Wno-declaration-after-statement
 
@@ -26,7 +26,7 @@ load:
 unload:
 	sudo rmmod $(TARGET_MODULE) || true >/dev/null
 
-client: client.c
+client: client.c bn.c bn_client.o
 	$(CC) -o $@ $^
 
 PRINTF = env printf
@@ -47,8 +47,14 @@ test: all
 	sudo sh -c "echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo"
 	$(MAKE) unload
 	$(MAKE) load
-	sudo taskset 0x2 ./client
+	sudo taskset -c 1  ./client
 	$(MAKE) unload
 	sudo sh -c "echo 1 > /proc/sys/kernel/randomize_va_space"
 	sudo sh -c "echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo"
 	python3 plot.py
+
+perf: all
+	$(MAKE) unload
+	$(MAKE) load
+	sudo taskset -c 1  ./client -p
+	$(MAKE) unload
