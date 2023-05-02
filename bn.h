@@ -9,13 +9,40 @@
 #include <linux/types.h>
 #endif
 
-typedef unsigned long long u64;
+#ifndef DIGIT_SIZE
+#if defined(__LP64__) || defined(__x86_64__) || defined(__amd64__) || \
+    defined(__aarch64__)
+#define DIGIT_SIZE 8
+#else
+#define DIGIT_SIZE 4
+#endif
+#endif
+
+#if DIGIT_SIZE == 4
+typedef unsigned int digit_t;
+typedef long long c_digit_t;
+typedef unsigned long long uc_digit_t;
+#define DIGIT_BITS 32
+#define DIGIT_HSHIFT 16U
+#define DIGIT_MAX 0xFFFFFFFFU
+
+#elif DIGIT_SIZE == 8
+typedef unsigned long long digit_t;
+typedef __int128_t c_digit_t;
+typedef __uint128_t uc_digit_t;
+#define DIGIT_BITS 64
+#define DIGIT_HSHIFT 32U
+#define DIGIT_MAX 0xFFFFFFFFFFFFFFFFU
+
+#else
+#error "DIGIT_SIZE must be 4 or 8"
+#endif
 
 
 typedef struct {
-    unsigned long long *number; /* Digits of number. */
-    unsigned int size;          /* Length of number. */
-    unsigned sign;              /* Sign bit. */
+    digit_t *number;   /* Digits of number. */
+    unsigned int size; /* Length of number. */
+    unsigned sign;     /* Sign bit. */
 } bn;
 
 bn *bn_alloc(size_t size);

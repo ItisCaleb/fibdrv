@@ -7,7 +7,7 @@
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include "bn.h"
-
+// 	sudo perf stat --repeat 5 taskset -c 1 ./client -p
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
 MODULE_DESCRIPTION("Fibonacci engine driver");
@@ -18,7 +18,7 @@ MODULE_VERSION("0.1");
 /* MAX_LENGTH is set to 92 because
  * ssize_t can't fit the number > 92
  */
-#define MAX_LENGTH 10000
+#define MAX_LENGTH 10000000000
 static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
 static struct class *fib_class;
@@ -85,7 +85,7 @@ static ssize_t fib_read(struct file *file,
 {
     kt = ktime_get();
     bn *res = fib_sequence(*offset);
-    if (copy_to_user(buf, res->number, res->size * sizeof(int)))
+    if (copy_to_user(buf, res->number, res->size * DIGIT_SIZE))
         return -EFAULT;
     kt = ktime_sub(ktime_get(), kt);
     int sz = res->size;

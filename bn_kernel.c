@@ -5,8 +5,8 @@
 bn *bn_alloc(size_t size)
 {
     bn *num = kmalloc(sizeof(bn), GFP_KERNEL);
-    num->number = kmalloc(sizeof(u64) * size, GFP_KERNEL);
-    memset(num->number, 0, sizeof(u64) * size);
+    num->number = kmalloc(DIGIT_SIZE * size, GFP_KERNEL);
+    memset(num->number, 0, DIGIT_SIZE * size);
     num->size = size;
     num->sign = 0;
     return num;
@@ -17,9 +17,9 @@ void bn_resize(bn *num, int n)
 {
     if (n == num->size)
         return;
-    num->number = krealloc(num->number, sizeof(u64) * n, GFP_KERNEL);
+    num->number = krealloc(num->number, DIGIT_SIZE * n, GFP_KERNEL);
     if (n > num->size)
-        memset(num->number + num->size, 0, sizeof(u64) * (n - num->size));
+        memset(num->number + num->size, 0, DIGIT_SIZE * (n - num->size));
     num->size = n;
 }
 
@@ -34,16 +34,16 @@ void bn_free(bn *p)
 char *bn_to_string(bn *src)
 {
     // log10(x) = log2(x) / log2(10) ~= log2(x) / 3.322
-    size_t len = (8 * sizeof(u64) * src->size) / 3 + 2 + src->sign;
+    size_t len = (8 * DIGIT_SIZE * src->size) / 3 + 2 + src->sign;
     char *s = kmalloc(len, GFP_KERNEL);
     char *p = s;
 
     memset(s, '0', len - 1);
     s[len - 1] = '\0';
     for (int i = src->size - 1; i >= 0; i--) {
-        for (u64 d = 1UL << 63; d; d >>= 1) {
+        for (digit_t d = 1UL << (DIGIT_BITS - 1); d; d >>= 1) {
             /* binary -> decimal string */
-            int carry = ((d & src->number[i]) != 0);
+            digit_t carry = ((d & src->number[i]) != 0);
             for (int j = len - 2; j >= 0; j--) {
                 s[j] += s[j] - '0' + carry;  // double it
                 carry = (s[j] > '9');
@@ -65,6 +65,6 @@ char *bn_to_string(bn *src)
 void bn_cpy(bn *dest, const bn *src)
 {
     bn_resize(dest, src->size);
-    memcpy(dest->number, src->number, sizeof(u64) * src->size);
+    memcpy(dest->number, src->number, DIGIT_SIZE * src->size);
     dest->sign = src->sign;
 }
